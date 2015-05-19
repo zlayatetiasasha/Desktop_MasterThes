@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="niftygui">
+    <CLASSES>
+      <root url="jar://C:/Program Files (x86)/jmonkeyplatform/jmonkeyplatform/libs/jME3-niftygui.jar!/" />
+      <root url="jar://C:/Program Files (x86)/jmonkeyplatform/jmonkeyplatform/libs/nifty-default-controls.jar!/" />
+      <root url="jar://C:/Program Files (x86)/jmonkeyplatform/jmonkeyplatform/libs/nifty.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://C:/Program Files (x86)/jmonkeyplatform/jmonkeyplatform/libs/nifty-default-controls-javadoc.jar!/" />
+      <root url="jar://C:/Program Files (x86)/jmonkeyplatform/jmonkeyplatform/libs/nifty-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES />
+  </library>
+</component>

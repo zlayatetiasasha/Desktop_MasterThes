@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="eventbus1">
+    <CLASSES>
+      <root url="jar://C:/Program Files/jmonkeyplatform/jmonkeyplatform/libs/eventbus.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="opencv-2410">
+    <CLASSES>
+      <root url="jar://$USER_HOME$/OpenCV_2.4.10_windows/opencv/build/java/opencv-2410.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/OpenCV_2.4.10_windows/opencv/build/java/opencv-2410.jar!/" />
+    </SOURCES>
+  </library>
+</component>
