@@ -21,6 +21,7 @@ public class PairOfFrames {
     public Mat algorithmInternal;
     public MatOfDMatch allMatches;
     public List<DMatch> good_matches_by_cv;
+    public Mat disparityMap;
 
     public List<DMatch> my_matches;
 

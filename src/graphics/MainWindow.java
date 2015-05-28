@@ -3,9 +3,16 @@ package graphics;
 import bluetooth.EchoServer;
 import com.example.AndroidTests2.obj.CameraFrame;
 import com.example.AndroidTests2.obj.GyroVectorAngle;
+import com.jme3.app.Application;
 import com.jme3.app.SimpleApplication;
 import com.jme3.asset.plugins.FileLocator;
 import com.jme3.bullet.BulletAppState;
+import com.jme3.effect.ParticleEmitter;
+import com.jme3.effect.ParticleMesh;
+import com.jme3.effect.shapes.*;
+import com.jme3.input.KeyInput;
+import com.jme3.input.controls.ActionListener;
+import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -16,38 +23,54 @@ import com.jme3.niftygui.RenderImageJme;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.ViewPort;
 import com.jme3.renderer.queue.RenderQueue;
-import com.jme3.scene.Geometry;
-import com.jme3.scene.Node;
-import com.jme3.scene.Spatial;
+import com.jme3.scene.*;
 import com.jme3.scene.shape.*;
+import com.jme3.system.AppSettings;
+import com.jme3.system.JmeCanvasContext;
 import com.jme3.texture.*;
 import com.jme3.texture.Image;
 import com.jme3.texture.plugins.AWTLoader;
+import com.jme3.util.BufferUtils;
 import com.jme3.util.SkyFactory;
 import bluetooth.init.Init;
 import de.lessvoid.nifty.Nifty;
 import de.lessvoid.nifty.builder.*;
+import de.lessvoid.nifty.controls.Button;
+import de.lessvoid.nifty.controls.CheckBox;
 import de.lessvoid.nifty.controls.button.builder.ButtonBuilder;
+import de.lessvoid.nifty.controls.window.WindowControl;
 import de.lessvoid.nifty.elements.Element;
 import de.lessvoid.nifty.elements.render.ImageRenderer;
+import de.lessvoid.nifty.elements.render.PanelRenderer;
 import de.lessvoid.nifty.elements.render.TextRenderer;
 import de.lessvoid.nifty.render.NiftyImage;
+import de.lessvoid.nifty.render.NiftyRenderEngine;
 import de.lessvoid.nifty.screen.Screen;
 import de.lessvoid.nifty.screen.ScreenController;
 import de.lessvoid.nifty.spi.render.RenderImage;
 import de.lessvoid.nifty.tools.Color;
+import jxl.Cell;
+import jxl.NumberCell;
+import jxl.Sheet;
+import jxl.Workbook;
 import obj.AnalyseMat;
 import obj.GyroUtils;
 import obj.PairOfFrames;
+import org.lwjgl.opengl.ContextAttribs;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.*;
 import org.opencv.core.Point;
 import org.opencv.features2d.*;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.utils.Converters;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.File;
 import java.util.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
@@ -88,11 +111,12 @@ public class MainWindow extends SimpleApplication implements ScreenController {
 
     public int pair_number = 0;
     public CameraFrame current_frame;
+    public PairOfFrames current_pair;
 
     public void setImageAndAngle() {
 
         if (EchoServer.pairs != null) {
-
+            set3DButtonEnabled(false);
             if (pair_number >= EchoServer.pairs.size()) {
                 pair_number = 0;
             }
@@ -100,52 +124,52 @@ public class MainWindow extends SimpleApplication implements ScreenController {
             PairOfFrames pair;
 
 
-                pair = EchoServer.pairs.get(pair_number);
-
-                //   byte buf[] = frame.buf;
-                //      byte buf1[] = frame1.buf;
+            pair = EchoServer.pairs.get(pair_number);
+            current_pair = pair;
+            //   byte buf[] = frame.buf;
+            //      byte buf1[] = frame1.buf;
 
                   /*  Mat mat = new Mat();
                     mat.create(960, 720, CvType.CV_8UC1);
                     mat.put(0, 0, buf);
                     Highgui.imdecode(mat, 1);
                     */
-                //     Mat m = Highgui.imdecode(new MatOfByte(buf), 1);
-                //      Mat m1 = Highgui.imdecode(new MatOfByte(buf1), 1);
+            //     Mat m = Highgui.imdecode(new MatOfByte(buf), 1);
+            //      Mat m1 = Highgui.imdecode(new MatOfByte(buf1), 1);
 
-                //   Core.flip(m.t(), m, 1);
-                //   AnalyseMat analyseMat = MainWindow.app.sift(m);
-                //    m = analyseMat.mat;
-
-
-
-                    System.out.println("--------------------------------------------");
-                    //System.out.println("analysing frames # " + frame.frame_number + " and " + frame1.frame_number);
-                    Mat result;
-                    try {
-                        GyroUtils.calculateGyroFundamentalMat(pair);
-                        result = doDescriptorsMatching(pair);
-                        // findFundamentalMat(pair);
-                        if (pair.algorithmFundamentalMat != null) {
-                            GyroUtils.printMat32F(pair.algorithmFundamentalMat, "Fundamental Mat by Opencv");
-                        }
+            //   Core.flip(m.t(), m, 1);
+            //   AnalyseMat analyseMat = MainWindow.app.sift(m);
+            //    m = analyseMat.mat;
 
 
-                        //  result = ReconstructionUtils.createDisparityMap(pair);
-//                MainWindow.app.setImage_cv(result);
-                        //  MainWindow.app.setImage(frame.mat);
-                        //  MainWindow.app.setCameraView(frame.angle);
-
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-
-
+            System.out.println("--------------------------------------------");
+            //System.out.println("analysing frames # " + frame.frame_number + " and " + frame1.frame_number);
+            Mat result;
+            try {
+                GyroUtils.calculateGyroFundamentalMat(pair);
+                result = doDescriptorsMatching(pair);
+                // findFundamentalMat(pair);
+                if (pair.algorithmFundamentalMat != null) {
+                    GyroUtils.printMat32F(pair.algorithmFundamentalMat, "Fundamental Mat by Opencv");
                 }
-                pair_number++;
+
+
+                //  result = ReconstructionUtils.createDisparityMap(pair);
+//                MainWindow.app.setImage_cv(result);
+                //  MainWindow.app.setImage(frame.mat);
+                //  MainWindow.app.setCameraView(frame.angle);
+                set3DButtonEnabled(true);
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
 
 
         }
+        pair_number++;
+
+
+    }
 
 
     public void setNiftyImage(Mat input) {
@@ -406,7 +430,7 @@ public class MainWindow extends SimpleApplication implements ScreenController {
             layer(new LayerBuilder("layer") {{
                 childLayoutVertical();
                 backgroundColor(Color.WHITE);
-                panel(new PanelBuilder("panelImage") {{
+                panel(new PanelBuilder("panelText") {{
                     childLayoutHorizontal();
                     text(new TextBuilder("textSensor") {{
                         text("Sensors");
@@ -441,7 +465,7 @@ public class MainWindow extends SimpleApplication implements ScreenController {
 
 
                     image(new ImageBuilder("image_cv") {{
-                        width("400");
+                        // width("400");
                         height("470");
 
                         //width("540");
@@ -451,18 +475,35 @@ public class MainWindow extends SimpleApplication implements ScreenController {
 
 
                 }});
+                panel(new PanelBuilder("panelButtons") {
+                    {
+                        childLayoutHorizontal();
+                        backgroundColor(Color.WHITE);
+                        marginTop("40");
+                        control(new ButtonBuilder("ApplyButton", "Next Image") {{
+                            alignLeft();
+                            valignCenter();
+                            marginRight("120px");
+                            height("40");
+                            width("100");
+                            visibleToMouse(true);
 
-                control(new ButtonBuilder("ApplyButton", "Next Image") {{
-                    alignLeft();
-                    valignCenter();
-                    marginRight("120px");
-                    height("40");
-                    width("100");
-                    visibleToMouse(true);
-                    marginTop("40");
-                    interactOnClick("setImageAndAngle()");
+                            interactOnClick("setImageAndAngle()");
 
-                }});
+                        }});
+                        control(new ButtonBuilder("Show3DButton", "Show 3D") {{
+                            alignLeft();
+                            valignCenter();
+                            marginLeft("5px");
+                            //marginRight("70px");
+                            height("40");
+                            width("100");
+                            visibleToMouse(true);
+                            interactOnClick("create3D()");
+
+                        }});
+                    }
+                });
                 text(new TextBuilder("textProgress") {{
                     text("Please, connect your device...");
                     style("nifty-label");
@@ -482,7 +523,68 @@ public class MainWindow extends SimpleApplication implements ScreenController {
                     }});
                 }});*/
             }});
+
         }}.build(nifty);
+    }
+
+    public static Screen create3dscene(Nifty nifty, final ScreenController controller) {
+        return new ScreenBuilder("3dscene") {
+            {
+                controller(controller);
+                layer(new LayerBuilder("3Dmodellayer") {
+                    {
+                        backgroundColor("#FFFAFA");
+                        childLayoutCenter();
+                        onStartScreenEffect(new EffectBuilder("fade") {{
+                            length(1000);
+                            startDelay(1000);
+                            effectParameter("start", "#0");
+                            effectParameter("end", "#f");
+                        }});
+                        visible(false);
+                        control(new ButtonBuilder("BacktoImages", "Back") {{
+                            alignLeft();
+                            valignCenter();
+                            marginLeft("5px");
+                            //marginRight("70px");
+                            height("40");
+                            width("100");
+                            visibleToMouse(true);
+                            interactOnClick("make3dInVisible()");
+
+                        }});
+                    }
+                });
+            }
+        }.build(nifty);
+    }
+
+    private void initInputs() {
+        inputManager.deleteMapping(SimpleApplication.INPUT_MAPPING_HIDE_STATS);
+
+        inputManager.addMapping("showSettings", new KeyTrigger(KeyInput.KEY_P));
+
+        ActionListener actionListener = new ActionListener() {
+            public void onAction(String name, boolean keyPressed, float tpf) {
+
+                if (name.equals("showSettings") && keyPressed) {
+                    try {
+                        //  WindowControl c = screen.findNiftyControl("myWindow", WindowControl.class);
+                        nifty.gotoScreen("start");
+                        //   c.getElement().setVisible(!c.getElement().isVisible());
+
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+
+
+                }
+            }
+        };
+
+        inputManager.addListener(actionListener, "showSettings");
+
+
     }
 
 
@@ -495,7 +597,8 @@ public class MainWindow extends SimpleApplication implements ScreenController {
             Imgproc.cvtColor(input, grayImage, Imgproc.COLOR_BGR2GRAY);
             Core.normalize(grayImage, grayImage, 0, 255, Core.NORM_MINMAX);
         }
-        FeatureDetector siftDetector = FeatureDetector.create(FeatureDetector.SIFT);
+        //FeatureDetector siftDetector = FeatureDetector.create(FeatureDetector.SIFT);
+        FeatureDetector siftDetector = FeatureDetector.create(FeatureDetector.HARRIS);
         DescriptorExtractor siftExtractor = DescriptorExtractor.create(DescriptorExtractor.SIFT);
 
         MatOfKeyPoint keyPoint = new MatOfKeyPoint();
@@ -593,9 +696,9 @@ public class MainWindow extends SimpleApplication implements ScreenController {
         //   camera.setLocalRotation(new Quaternion(angle.x, angle.y, angle.z, 0f));
         //  translateGeometry(new Vector3f(angle.x, angle.y, angle.z), ROT, pivotCamera);
         //System.out.println(angle.toString());
-        MainWindow.app.pivotCamera.setLocalRotation(new Quaternion().fromAngles(angle.x, angle.y, angle.z));
-        MainWindow.app.cam1.setRotation(pivotCamera.getLocalRotation());
-        MainWindow.app.cam1.lookAt(pivot.getLocalTranslation(), new Vector3f(0.0f, 1.0f, 0f));
+        //  MainWindow.app.pivotCamera.setLocalRotation(new Quaternion().fromAngles(angle.x, angle.y, angle.z));
+        //    MainWindow.app.cam1.setRotation(pivotCamera.getLocalRotation());
+        //   MainWindow.app.cam1.lookAt(pivot.getLocalTranslation(), new Vector3f(0.0f, 1.0f, 0f));
     }
 
     com.jme3.scene.shape.Box floor, grid;
@@ -610,12 +713,12 @@ public class MainWindow extends SimpleApplication implements ScreenController {
 
         nifty.loadStyleFile("nifty-default-styles.xml");
         nifty.loadControlFile("nifty-default-controls.xml");
-        createIntroScreen(nifty, new MyScreenController());
+        screen = createIntroScreen(nifty, new MyScreenController());
         nifty.gotoScreen("start");
 
         guiViewPort.addProcessor(niftyDisplay);
 
-        flyCam.setMoveSpeed(70f);
+        flyCam.setMoveSpeed(40f);
         flyCam.setDragToRotate(true);
 
 
@@ -623,7 +726,7 @@ public class MainWindow extends SimpleApplication implements ScreenController {
         sphere.setCullHint(Spatial.CullHint.Never);
         assetManager.registerLocator("assets/", FileLocator.class);
 
-        rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Sky/Bright/BrightSky.dds", false));
+        // rootNode.attachChild(SkyFactory.createSky(assetManager, "Textures/Sky/Bright/BrightSky.dds", false));
 
         rootNode.setCullHint(Spatial.CullHint.Never);
 
@@ -631,44 +734,65 @@ public class MainWindow extends SimpleApplication implements ScreenController {
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
 
-        sphere_ball = new Sphere(32, 32, 0.8f);
-        sphere_ball.setTextureMode(Sphere.TextureMode.Projected);
+        //  sphere_ball = new Sphere(32, 32, 0.8f);
+        //   sphere_ball.setTextureMode(Sphere.TextureMode.Projected);
 
-        floor = new com.jme3.scene.shape.Box(15f, 0.11f, 28f);
-        grid = new com.jme3.scene.shape.Box(15f, 2f, 0.15f);
+        //     floor = new com.jme3.scene.shape.Box(15f, 0.11f, 28f);
+        //   grid = new com.jme3.scene.shape.Box(15f, 2f, 0.15f);
 
         initLight();
-        initCameraandObjectModel();
+        //  initCameraandObjectModel();
 
 
         inputManager.setCursorVisible(true);
         setDisplayStatView(false);
         setDisplayFps(false);
 
-        viewPort.setBackgroundColor(ColorRGBA.White);
+        viewPort.setBackgroundColor(ColorRGBA.Black);
 
 
-        //cam.setViewPort(.6f, 1f, .5f, 1f);
-        cam.setViewPort(1f, 1f, 0f, 0f);
-        cam.setLocation(new Vector3f(8f, 2f, 12f));
+        cam.setViewPort(.6f, 1f, .5f, 1f);
+        // cam.setViewPort(1f, 1f, 0f, 0f);
+        //   cam.setLocation(new Vector3f(8f, 2f, 12f));
 
 
         cam1 = cam.clone();
-        // cam1.setViewPort(.6f, 1f, 0f, .5f);
-        cam1.setViewPort(1f, 1f, 0f, 0f);
-        cam1.setLocation(new Vector3f(0f, -2f, -4f));
+        cam1.setViewPort(.6f, 1f, 0f, .5f);
+        //cam1.setViewPort(1f, 1f, 0f, 0f);
+        //  cam1.setLocation(new Vector3f(0f, -2f, -4f));
 
-        cam.lookAt(new Vector3f(object.getLocalTranslation().getX(),
+/*        cam.lookAt(new Vector3f(object.getLocalTranslation().getX(),
                 object.getLocalTranslation().getY() - 2f,
                 object.getLocalTranslation().getZ())
                 , new Vector3f(0.0f, 0.0f, 0.0f));
+                */
         //  cam1.setLocation(new Vector3f(-12, 0f, 18f));
         //  cam1.lookAt(new Vector3f(0.0f, 0.0f, 5f), new Vector3f(0.0f, 0.0f, 0.0f));
         ViewPort viewPort2 = renderManager.createMainView("PiP", cam1);
         viewPort2.setClearFlags(true, true, true);
         viewPort2.attachScene(rootNode);
 
+        set3DButtonEnabled(false);
+        set3DButtonEnabled(true);
 
+        initInputs();
+
+        forMesh = new Geometry("line", new Mesh());
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        mat.setColor("Color", ColorRGBA.White);
+        forMesh.setMaterial(mat);
+
+
+        rootNode.attachChild(forMesh);
+
+    }
+
+    static Geometry forMesh;
+
+    public void set3DButtonEnabled(boolean b) {
+        Button button3D = nifty.getCurrentScreen().findElementByName("Show3DButton").getNiftyControl(Button.class);
+        if (button3D != null)
+            button3D.setEnabled(b);
     }
 
     static final int MOVE = 1;
@@ -768,6 +892,185 @@ public class MainWindow extends SimpleApplication implements ScreenController {
     }
 
     public Iterator iterator;
+
+
+    public void create3DModel() {
+        //    Element niftyElement = nifty.getCurrentScreen().findElementByName("image_cv");
+        //    Element panel = nifty.getCurrentScreen().findElementByName("panelImage");
+        //   panel.setWidth(panel.getWidth()-niftyElement.getWidth());
+        // niftyElement.setWidth(0);
+
+        //   panel.setVisible(false);
+        cam.setViewPort(0f, 1f, 0f, 1f);
+        cam1.setViewPort(1f, 1f, 1f, 1f);
+
+        create3dscene(nifty, new MyScreenController());
+        nifty.gotoScreen("3dscene");
+
+        // Mat homogeniousCoords= calculate3DPoints();
+        //   createMesh(homogeniousCoords);
+        createMesh(null);
+
+        //   Element panel3d = nifty.getCurrentScreen().findElementByName("3Dmodellayer");
+        //   panel3d.setVisible(true);
+    }
+
+    public void make3DInVisible() {
+        //  Element niftyElement = nifty.getCurrentScreen().findElementByName("3Dmodellayer");
+        //   niftyElement.setVisible(false);
+    }
+
+    public void createMesh(Mat homogeniousCoords) {
+        // Vector3f[] lineVerticies = new Vector3f[homogeniousCoords.cols()];
+   /*     Mat resPoints=new Mat(homogeniousCoords.rows()-1,homogeniousCoords.cols(), CvType.CV_32FC1);
+            for(int j=0;j<homogeniousCoords.cols();j++){
+                    if( homogeniousCoords.get(3, j)[0]!=0) {
+                      //  resPoints.put(, j, homogeniousCoords.get(, j)[0] / homogeniousCoords.get(3, j)[0]);
+                        lineVerticies[j]= new Vector3f((float)(homogeniousCoords.get(0, j)[0] / homogeniousCoords.get(3, j)[0]),
+                                (float)(homogeniousCoords.get(1, j)[0] / homogeniousCoords.get(3, j)[0]),
+                                (float)(homogeniousCoords.get(2, j)[0] / homogeniousCoords.get(3, j)[0]));
+                    }
+            }
+
+*/
+
+        Vector3f[] lineVerticies = new Vector3f[100];
+        try {
+            Workbook workbook = Workbook.getWorkbook(new File("C:\\Users\\Sa User\\IdeaProjects\\JMonkeyTest3\\TestAccelerometer_constant.xls"));
+            Sheet sheet = workbook.getSheet(0);
+            double x=0, y=0, z=0;
+            for (int i = 1; i < 100; i++) {
+                Cell c = sheet.getCell(1, i);
+                NumberCell nc = (NumberCell) c;
+                x += nc.getValue();
+
+                c = sheet.getCell(2, i);
+                nc = (NumberCell) c;
+                 y += nc.getValue();
+
+                c = sheet.getCell(3, i);
+                nc = (NumberCell) c;
+                z += nc.getValue();
+                lineVerticies[i - 1] = new Vector3f((float) x, (float) y, (float) z);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+
+        Mesh mesh = new Mesh();
+        mesh.setMode(Mesh.Mode.Points);
+
+
+        mesh.setBuffer(VertexBuffer.Type.Position, 3, BufferUtils.createFloatBuffer(lineVerticies));
+
+        mesh.setPointSize(2f);
+        mesh.updateBound();
+        mesh.updateCounts();
+        //  mat.getAdditionalRenderState().setFaceCullMode(FaceCullMode.Off);
+
+    /*    final Mesh me=mesh;
+
+       ParticleEmitter emit = new ParticleEmitter("Emitter", ParticleMesh.Type.Point, 10000);
+        ArrayList<Mesh> a=new ArrayList<Mesh>(); a.add(me);
+        emit.setShape(new EmitterMeshFaceShape(a));
+        emit.setGravity(0, 0, 0);
+        emit.setLowLife(60);
+        emit.setHighLife(60);
+        emit.getParticleInfluencer().setInitialVelocity(new Vector3f(0, 0, 0));
+        emit.setImagesX(15);
+        emit.setStartSize(0.05f);
+        emit.setEndSize(0.05f);
+        emit.setStartColor(ColorRGBA.White);
+        emit.setEndColor(ColorRGBA.White);
+        emit.setSelectRandomImage(true);
+        emit.emitAllParticles();
+
+        Material mat = new Material(assetManager, "Common/MatDefs/Misc/Particle.j3md");
+        mat.setBoolean("PointSprite", true);
+        emit.setMaterial(mat);
+        rootNode.attachChild(emit);*/
+        forMesh.setMesh(mesh);
+
+
+    }
+
+
+    public Mat calculate3DPoints() {
+        Mat E = current_pair.myFundamentalMat;
+        Mat w = new Mat(), u = new Mat(), vt = new Mat();
+        Core.SVDecomp(E, w, u, vt);
+
+        Mat W = new Mat(3, 3, CvType.CV_64FC1);
+        W.put(0, 0, 0);
+        W.put(0, 1, -1);
+        W.put(0, 2, 0);
+        W.put(1, 0, 1);
+        W.put(1, 1, 0);
+        W.put(1, 2, 0);
+        W.put(2, 0, 0);
+        W.put(2, 1, 0);
+        W.put(2, 2, 1);
+
+        Mat W_inv = W.inv();
+
+        Mat R1_temp = new Mat();
+        Mat R1 = new Mat();
+        Core.gemm(u, W, 1, Mat.zeros(3, 3, CvType.CV_64FC1), 1, R1_temp);
+        Core.gemm(R1_temp, vt, 1, Mat.zeros(3, 3, CvType.CV_64FC1), 1, R1);
+
+        Mat T1 = u.col(2);
+
+        Mat R2_temp = new Mat();
+        Mat R2 = new Mat();
+        Core.gemm(u, W_inv, 1, Mat.zeros(3, 3, CvType.CV_64FC1), 1, R2_temp);
+        Core.gemm(R2_temp, vt, 1, Mat.zeros(3, 3, CvType.CV_64FC1), 1, R2);
+
+        Mat T2 = new Mat();
+        Core.multiply(u.col(2), new Scalar(-1), T2);
+
+        Mat P1 = Mat.eye(3, 4, CvType.CV_64FC1);
+        Mat P2 = new Mat(3, 4, CvType.CV_64FC1);
+
+        P2.put(0, 0, R1.get(0, 0));
+        P2.put(0, 1, R1.get(0, 1));
+        P2.put(0, 2, R1.get(0, 2));
+        P2.put(0, 3, T1.get(0, 0));
+        P2.put(1, 0, R1.get(1, 0));
+        P2.put(1, 1, R1.get(1, 1));
+        P2.put(1, 2, R1.get(1, 2));
+        P2.put(1, 3, T1.get(1, 0));
+
+        P2.put(2, 0, R1.get(2, 0));
+        P2.put(2, 1, R1.get(2, 1));
+        P2.put(2, 2, R1.get(2, 2));
+        P2.put(2, 3, R1.get(2, 0));
+        Mat Q = new Mat();
+
+        //  Core.gemm(current_pair.myInternal,P2,1,Mat.zeros(3,4,CvType.CV_64FC1),1,Q);
+
+        Mat lp = Converters.vector_Point2d_to_Mat(current_pair.frame.analyseMat.matchPoints);//should be 1*N, CV_64FC2
+        Mat rp = Converters.vector_Point2d_to_Mat(current_pair.frame1.analyseMat.matchPoints); //should be 1 *N, CV_64FC2
+
+        System.out.println(lp.rows());
+        System.out.println(lp.cols());
+        System.out.println(lp.type());
+
+        Mat out = new Mat(/*4,lp.cols(),CvType.CV_64FC1*/);
+        try {
+            Mat out_img = new Mat();
+            //       Calib3d.reprojectImageTo3D(current_pair.disparityMap,out_img,Q);
+            Calib3d.triangulatePoints(P1, P2, lp, rp, out);
+            GyroUtils.printMat32F(out, "triangulation");
+            return out;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+        return null;
+
+
+    }
 
 
 }

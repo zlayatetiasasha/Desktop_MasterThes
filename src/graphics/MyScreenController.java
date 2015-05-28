@@ -52,4 +52,12 @@ public class MyScreenController extends AbstractAppState implements ScreenContro
         //MainWindow.app.pivotCamera.setLocalRotation(new Quaternion().fromAngles(i, 0f, 0f));
 
     }
+
+    public void create3D(){
+        MainWindow.app.create3DModel();
+    }
+
+    public void make3dInVisible(){
+        MainWindow.app.make3DInVisible();
+    }
 }

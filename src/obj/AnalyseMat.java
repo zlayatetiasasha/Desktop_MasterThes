@@ -1,12 +1,15 @@
 package obj;
 
 import graphics.MainWindow;
+import org.opencv.calib3d.Calib3d;
+import org.opencv.calib3d.StereoBM;
 import org.opencv.core.*;
 import org.opencv.features2d.DMatch;
 import org.opencv.features2d.DescriptorMatcher;
 import org.opencv.features2d.Features2d;
 import org.opencv.features2d.KeyPoint;
 import org.opencv.highgui.Highgui;
+import org.opencv.utils.Converters;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -187,34 +190,28 @@ public class AnalyseMat {
         List<DMatch> good_matches = new ArrayList<DMatch>();
         List<DMatch> matches_list = pair.allMatches.toList();
 
-        BufferedWriter writer=createEpipolarConstraintFile(i);
+        //    BufferedWriter writer=createEpipolarConstraintFile(i);
         Mat F = pair.myFundamentalMat;
-        writeMatrix(writer,F,"My Fundamental Matrix");
-        writeEpipolarConstraintResult(writer,0.001f+"","epsilon=");
+        //   writeMatrix(writer,F,"My Fundamental Matrix");
+        //  writeEpipolarConstraintResult(writer,0.001f+"","epsilon=");
 
 
         Mat E = pair.E;
 
+        // StereoBM bm=new StereoBM(10,16,15);
+        //  Mat disp=new Mat();
+        //  bm.compute(oneMat.mat, anotherMat.mat, disp);
+        //  pair.disparityMap=disp;
+
+
+        // Uncomment this to lines!!!! -> Having sift matches, filter it by my F mat
         for (int i = 0; i < pair.frame.analyseMat.matchPoints_array.length; i++) {
             Point p1 = pair.frame.analyseMat.matchPoints_array[i], p2 = pair.frame1.analyseMat.matchPoints_array[i];
-          /*
-            Mat mp1=new Mat(3, 1, CvType.CV_64FC1);
-            Core.gemm(pair.myInternal,mp1k, 1, Mat.zeros(3,1,CvType.CV_64FC1),1,mp1);
 
-
-            mp2k=new Mat(3, 1, CvType.CV_64FC1);
-            mp2k.put(0, 0, p2.x);
-            mp2k.put(1, 0, p2.y);
-            mp2k.put(2, 0, 1.0);
-
-            Mat mp2=new Mat(3, 1, CvType.CV_64FC1);
-            Core.gemm(pair.myInternal,mp2k, 1, Mat.zeros(3, 1, CvType.CV_64FC1), 1, mp2);
-
-            Mat temp = new Mat();
-            Core.gemm(mp1.t(), E , 1, Mat.zeros(1, 3, CvType.CV_64FC1), 1, temp);
-            Mat result = new Mat();
-            Core.gemm(temp, mp2, 1, Mat.zeros(1, 1, CvType.CV_64FC1), 1, result);
-*/
+     //         for(int i=0;i<kp1.size();i++){
+     //          for(int j=0;j<kp2.size();j++){
+    //              Point p1=kp1.get(i).pt;
+    //               Point p2=kp2.get(j).pt;
 
             Mat mp1, mp2;
 
@@ -244,32 +241,34 @@ public class AnalyseMat {
             //  Core.gemm(mp1k.t(), E, 1, Mat.zeros(1, 3, CvType.CV_64FC1), 1, temp);
             Mat result = new Mat();
             Core.gemm(m1, mp2, 1, Mat.zeros(1, 1, CvType.CV_64FC1), 1, result);
-            //  Core.gemm(temp, mp2k, 1, Mat.zeros(1, 1, CvType.CV_64FC1), 1, result);
-
 
 
             double d = result.get(0, 0)[0];
-            writeEpipolarConstraintResult(writer, "{"+p1.x+", "+p1.y+"}", "p1=");
-            writeEpipolarConstraintResult(writer, "{"+p2.x+", "+p2.y+"}", "p2=");
-            writeEpipolarConstraintResult(writer, d+"", "p1*F*p2 = ");
-            writeEpipolarConstraintResult(writer, "--------------", "p1*F*p2");
+            //   writeEpipolarConstraintResult(writer, "{"+p1.x+", "+p1.y+"}", "p1=");
+            //   writeEpipolarConstraintResult(writer, "{"+p2.x+", "+p2.y+"}", "p2=");
+            //   writeEpipolarConstraintResult(writer, d+"", "p1*F*p2 = ");
+            //    writeEpipolarConstraintResult(writer, "--------------", "p1*F*p2");
             //System.out.println("m*F*m1=" + d);
             if (Math.abs(d) < 0.001f) {
-                good_matches.add(matches_list.get(i));
-                pts2.add(kp2.get(matches_list.get(i).trainIdx).pt);
-                pts1.add(kp1.get(matches_list.get(i).queryIdx).pt);
+             //   Mat dist = new Mat();
+             //   Core.magnitude(mp1, mp2, dist);
+             //   DMatch dMatch = new DMatch(i, j, (float) dist.get(0, 0)[0]);
+             //   good_matches.add(dMatch);
+             //   pts2.add(p2);
+             //   pts1.add(p1);
+                   good_matches.add(matches_list.get(i));
+                     pts2.add(kp2.get(matches_list.get(i).trainIdx).pt);
+                     pts1.add(kp1.get(matches_list.get(i).queryIdx).pt);
             }
-            //  double d=result.get(0,0)[0];
-            // if(d==0.0){
-            //       good_matches.add(matches_list.get(i));
-            //         pts2.add(kp2.get(matches_list.get(i).trainIdx).pt);
-            //        pts1.add(kp1.get(matches_list.get(i).queryIdx).pt);
-            //   }
+
         }
+       // }
 
         try {
-            writer.close();
-        }catch(Exception ex){ex.printStackTrace();}
+            // writer.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
 
         pair.frame.analyseMat.matchPoints_array = new Point[pts1.size()];
         pair.frame1.analyseMat.matchPoints_array = new Point[pts2.size()];
@@ -278,11 +277,15 @@ public class AnalyseMat {
 
         pair.frame.analyseMat.matchPoints = pts1;
         pair.frame1.analyseMat.matchPoints = pts2;
+        // Mat p1=Converters.vector_Point2f_to_Mat(pts1);
+        // Mat p2=Converters.vector_Point2f_to_Mat(pts2);
 
         MatOfDMatch good = new MatOfDMatch();
         good.fromList(good_matches);
 
         pair.my_matches = good_matches;
+
+        // Calib3d.stereoRectify(pair.myInternal,p1,p2,pair.myFundamentalMat,new Size(640,480),);
 
         Mat img_matches = new Mat();
         Features2d.drawMatches(oneMat.mat, oneMat.keyPoints, anotherMat.mat, anotherMat.keyPoints, good, img_matches, Scalar.all(-1),
@@ -290,14 +293,14 @@ public class AnalyseMat {
                 new MatOfByte(), Features2d.NOT_DRAW_SINGLE_POINTS);
 
         MainWindow.app.setImage(img_matches);
-        saveImageToFile(i++, img_matches, pair);
+//        saveImageToFile(i++, img_matches, pair);
 
         return good;
         // GyroUtils.printMat32F(result,"m^T * F * m' = ");
     }
 
 
-    static String folder="slychayanaya_zapis";
+    static String folder = "slychayanaya_zapis";
 
     public static void saveImageToFile(int n, Mat m, PairOfFrames pair) {
 
@@ -307,7 +310,7 @@ public class AnalyseMat {
                     (new FileWriter("C:\\Users\\Sa User\\IdeaProjects\\JMonkeyTest3\\tests\\" + folder + "\\test" + n + "_matrices.txt"));
 
 
-            writeMatrix(writer, pair.R,"Rotation matrix");
+            writeMatrix(writer, pair.R, "Rotation matrix");
             writeMatrix(writer, pair.T, "Translation");
             writeMatrix(writer, pair.myFundamentalMat, "My Fundamental mat");
 
@@ -328,7 +331,7 @@ public class AnalyseMat {
             for (int i = 0; i < m.rows(); i++) {
                 for (int j = 0; j < m.cols(); j++) {
                     double[] temp = m.get(i, j);
-                   writer.append(String.format("%.6f", temp[0]) + " ");
+                    writer.append(String.format("%.6f", temp[0]) + " ");
                 }
                 writer.newLine();
             }
@@ -337,12 +340,12 @@ public class AnalyseMat {
         }
     }
 
-    public static BufferedWriter createEpipolarConstraintFile(int n){
+    public static BufferedWriter createEpipolarConstraintFile(int n) {
         try {
             BufferedWriter writer = new BufferedWriter
-                    (new FileWriter("C:\\Users\\Sa User\\IdeaProjects\\JMonkeyTest3\\tests\\" + folder + "\\test" + n + "_epipolarConstraintRes"+".txt"));
+                    (new FileWriter("C:\\Users\\Sa User\\IdeaProjects\\JMonkeyTest3\\tests\\" + folder + "\\test" + n + "_epipolarConstraintRes" + ".txt"));
             return writer;
-        }catch(Exception ex){
+        } catch (Exception ex) {
             ex.printStackTrace();
             return null;
         }
@@ -350,9 +353,9 @@ public class AnalyseMat {
 
     public static void writeEpipolarConstraintResult(BufferedWriter writer, String text, String title) {
         try {
-            writer.append(title + " "+text);
+            writer.append(title + " " + text);
             writer.newLine();
-        }catch(Exception ex){
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
     }

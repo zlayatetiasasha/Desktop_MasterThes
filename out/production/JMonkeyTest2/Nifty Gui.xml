@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<nifty>
+    <useStyles filename="nifty-default-styles.xml"/>
+    <useControls filename="nifty-default-controls.xml"/>
+    <screen id="screen0">
+        <layer childLayout="absolute" id="layer3">
+            <control height="30%" id="window1" name="window" title="window" width="50%" x="4" y="387" closeable="false"/>
+        </layer>
+    </screen>
+    <screen id="screen13"/>
+</nifty>

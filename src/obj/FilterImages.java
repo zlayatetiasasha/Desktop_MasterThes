@@ -36,6 +36,8 @@ public class FilterImages {
             }*/
 
             if (i + 1 < frames.size()) {
+                AccelVectorPath path=frames.get(i+1).path.minus(frames.get(i).path);
+                if(path.x==0 && path.y==0 && path.z==0){continue;}
                 result.add(new PairOfFrames(frames.get(i), frames.get(i + 1)));
             }
         }
